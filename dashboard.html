@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard ร้านกาแฟ - Coffee Business Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #ff6b6b;
+            --primary-dark: #ee5a5a;
+            --secondary: #4ecdc4;
+            --accent: #ffe66d;
+            --dark: #1a1a2e;
+            --darker: #16213e;
+            --card: #1f2937;
+            --card-light: #374151;
+            --text: #f9fafb;
+            --text-muted: #9ca3af;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        body {
+            font-family: 'Kanit', sans-serif;
+            font-size: 16px;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 50%, #ffb5b5 100%);
+            border-radius: 28px;
+            padding: 32px 40px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 25px 80px rgba(255, 107, 107, 0.35);
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: 20%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+        }
+        .header-left { position: relative; z-index: 1; }
+        .header h1 { 
+            font-size: 42px; 
+            font-weight: 800; 
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            letter-spacing: -1px;
+        }
+        .header p { 
+            font-size: 16px; 
+            color: rgba(255,255,255,0.9); 
+            margin-top: 6px;
+            font-weight: 500;
+        }
+        .header-stats {
+            display: flex;
+            gap: 40px;
+            position: relative;
+            z-index: 1;
+        }
+        .header-stat {
+            text-align: center;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            padding: 16px 28px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .header-stat-value { 
+            font-size: 32px; 
+            font-weight: 800; 
+            color: #fff;
+        }
+        .header-stat-label { 
+            font-size: 13px; 
+            color: rgba(255,255,255,0.85); 
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        .file-btn {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-family: 'Kanit', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+        .file-btn:hover { 
+            background: rgba(255,255,255,0.3); 
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        }
+        .file-input-wrapper input[type="file"] { display: none; }
+        
+        /* Import Status */
+        .import-status { 
+            margin-top: 10px; 
+            padding: 10px 16px; 
+            border-radius: 10px; 
+            font-size: 14px; 
+            font-weight: 500;
+            display: none;
+        }
+        .import-status.success { 
+            background: rgba(16, 185, 129, 0.15); 
+            color: var(--success);
+            display: block;
+        }
+        .import-status.error { 
+            background: rgba(239, 68, 68, 0.15); 
+            color: var(--danger);
+            display: block;
+        }
+        
+        /* Filter Section */
+        .filter-section {
+            background: linear-gradient(145deg, var(--card) 0%, var(--darker) 100%);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .filter-title {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filter-clear {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Kanit', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .filter-clear:hover { background: rgba(239, 68, 68, 0.25); }
+        
+        .filter-groups { display: flex; flex-wrap: wrap; gap: 20px; }
+        .filter-group { flex: 1; min-width: 200px; }
+        .filter-group-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .filter-options { display: flex; flex-wrap: wrap; gap: 8px; }
+        .filter-chip {
+            padding: 8px 18px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+            color: var(--text-muted);
+        }
+        .filter-chip:hover { 
+            background: rgba(255,255,255,0.1);
+            color: var(--text);
+        }
+        .filter-chip.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+        
+        /* Active Filters */
+        .active-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .active-filter {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 107, 107, 0.1));
+            border: 1px solid var(--primary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .active-filter button {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+        }
+        
+        /* Bento Grid */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+        
+        /* Card */
+        .card {
+            background: linear-gradient(145deg, var(--card) 0%, var(--darker) 100%);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.4s ease;
+        }
+        .card:hover { 
+            transform: translateY(-6px);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+            border-color: rgba(255,107,107,0.2);
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .card-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        /* KPI Grid */
+        .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 20px; }
+        .kpi-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+            border-radius: 16px;
+            padding: 20px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .kpi-card:hover {
+            background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
+            transform: translateY(-4px);
+            border-color: rgba(255,107,107,0.3);
+        }
+        .kpi-card:hover::before { opacity: 1; }
+        .kpi-value {
+            font-size: 30px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), #ffb5b5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .kpi-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            font-weight: 500;
+        }
+        
+        /* Chart */
+        .chart-box { height: 260px; position: relative; }
+        .chart-box-sm { height: 180px; position: relative; }
+        
+        /* Rank List */
+        .rank-list { list-style: none; }
+        .rank-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 12px;
+            margin-bottom: 4px;
+        }
+        .rank-item:hover {
+            background: rgba(255,255,255,0.04);
+            padding-left: 8px;
+            padding-right: 8px;
+            margin-left: -8px;
+            margin-right: -8px;
+        }
+        .rank-num {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            margin-right: 14px;
+        }
+        .rank-name { flex: 1; font-weight: 600; }
+        .rank-value { 
+            font-weight: 800; 
+            color: var(--primary);
+            font-size: 18px;
+        }
+        
+        /* Progress */
+        .progress-list { margin-top: 10px; }
+        .progress-item {
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .progress-item:hover { background: rgba(255,255,255,0.03); }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .progress-bar {
+            height: 12px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Donut */
+        .donut-flex { display: flex; align-items: center; gap: 24px; }
+        .donut-chart { width: 140px; height: 140px; position: relative; }
+        .donut-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .donut-total { font-size: 26px; font-weight: 800; }
+        .donut-label { font-size: 11px; color: var(--text-muted); }
+        
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px; }
+        .stat-box {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+        }
+        .stat-val { font-size: 22px; font-weight: 800; }
+        .stat-lbl { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+        
+        /* Grid sizes */
+        .col-3 { grid-column: span 3; }
+        .col-4 { grid-column: span 4; }
+        .col-6 { grid-column: span 6; }
+        .col-8 { grid-column: span 8; }
+        .col-12 { grid-column: span 12; }
+        
+        /* KPI Table */
+        .table-wrap {
+            max-height: 320px;
+            overflow-y: auto;
+            border-radius: 12px;
+        }
+        .table-wrap::-webkit-scrollbar { width: 6px; }
+        .table-wrap::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 3px; }
+        .table-wrap::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+        
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table th {
+            padding: 14px 12px;
+            text-align: left;
+            background: rgba(255,255,255,0.03);
+            color: var(--text-muted);
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .data-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            animation: fadeIn 0.3s;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: linear-gradient(145deg, var(--card) 0%, var(--darker) 100%);
+            border-radius: 28px;
+            padding: 36px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: slideUp 0.3s;
+        }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-title { font-size: 26px; font-weight: 800; color: var(--primary); }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 36px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .modal-close:hover { color: var(--primary); }
+        .modal-section { margin-bottom: 20px; }
+        .modal-label { 
+            color: var(--text-muted); 
+            font-size: 12px; 
+            margin-bottom: 6px; 
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .modal-value { font-size: 17px; font-weight: 600; line-height: 1.6; }
+        
+        /* Colors */
+        .bg-pink { background: linear-gradient(135deg, #ff6b6b, #ff8e8e); }
+        .bg-teal { background: linear-gradient(135deg, #4ecdc4, #6ee7de); }
+        .bg-purple { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
+        .bg-yellow { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+        .bg-green { background: linear-gradient(135deg, #10b981, #34d399); }
+        .bg-orange { background: linear-gradient(135deg, #f97316, #fb923c); }
+        
+        @media (max-width: 1400px) {
+            .col-3, .col-4 { grid-column: span 6; }
+            .col-6, .col-8, .col-12 { grid-column: span 12; }
+            .kpi-row { grid-template-columns: repeat(3, 1fr); }
+            .header-stats { gap: 20px; }
+            .header-stat { padding: 12px 20px; }
+            .header-stat-value { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <h1>☕ Dashboard ร้านกาแฟ</h1>
+            <p>Business Analytics - รายงานผู้บริหาร</p>
+        </div>
+        <div class="header-stats">
+            <div class="header-stat">
+                <div class="header-stat-value" id="headerOrders">1,500</div>
+                <div class="header-stat-label">จำนวนออร์เดอร์</div>
+            </div>
+            <div class="header-stat">
+                <div class="header-stat-value" id="headerRevenue">209,950</div>
+                <div class="header-stat-label">รายได้รวม (บาท)</div>
+            </div>
+            <div class="header-stat">
+                <div class="header-stat-value" id="headerAOV">140</div>
+                <div class="header-stat-label">AOV (บาท/ออร์เดอร์)</div>
+            </div>
+        </div>
+        <div class="file-input-wrapper">
+            <label for="fileInput" class="file-btn">
+                📥 Import Data
+            </label>
+            <input type="file" id="fileInput" accept=".xlsx,.csv">
+            <div id="importStatus" class="import-status"></div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <div class="filter-header">
+            <div class="filter-title">🎯 ตัวกรองข้อมูล (Cross Filter)</div>
+            <button class="filter-clear" onclick="clearAllFilters()">🗑️ ล้างตัวกรองทั้งหมด</button>
+        </div>
+        
+        <div class="filter-groups" id="filterGroups">
+            <!-- Filter groups will be generated dynamically -->
+        </div>
+        
+        <div class="active-filters" id="activeFilters">
+            <!-- Active filters will appear here -->
+        </div>
+    </div>
+
+    <div class="bento-grid">
+        
+        <!-- KPI Summary -->
+        <div class="card col-12">
+            <div class="card-title">
+                <div class="card-icon bg-pink">💰</div>
+                📊 สรุปผลการดำเนินงาน (KPI Summary)
+            </div>
+            <div class="kpi-row">
+                <div class="kpi-card" onclick="showKpiModal(1)">
+                    <div class="kpi-value" id="totalRevenue">209,950</div>
+                    <div class="kpi-label">รายได้รวม (บาท)</div>
+                </div>
+                <div class="kpi-card" onclick="showKpiModal(2)">
+                    <div class="kpi-value" id="aov">139.97</div>
+                    <div class="kpi-label">AOV (บาท/ออร์เดอร์)</div>
+                </div>
+                <div class="kpi-card" onclick="showKpiModal(3)">
+                    <div class="kpi-value" id="avgItemPrice">82.59</div>
+                    <div class="kpi-label">ราคาเฉลี่ย/ชิ้น</div>
+                </div>
+                <div class="kpi-card" onclick="showKpiModal(4)">
+                    <div class="kpi-value" id="totalItems">2,542</div>
+                    <div class="kpi-label">จำนวนชิ้นที่ขาย</div>
+                </div>
+                <div class="kpi-card" onclick="showKpiModal(13)">
+                    <div class="kpi-value" id="orderCount">1,500</div>
+                    <div class="kpi-label">จำนวนออร์เดอร์</div>
+                </div>
+                <div class="kpi-card" onclick="showKpiModal(14)">
+                    <div class="kpi-value" id="ordersPerDay">88</div>
+                    <div class="kpi-label">ออร์เดอร์/วัน</div>
+                </div>
+            </div>
+            <div class="kpi-row" style="margin-bottom: 0;">
+                <div class="kpi-card" onclick="showKpiModal(5)">
+                    <div class="kpi-value" id="totalDiscount">1,300</div>
+                    <div class="kpi-label">ส่วนลดรวม (บาท)</div>
+                </div>
+                <div class="kpi-card" onclick="showKpiModal(6)">
+                    <div class="kpi-value" id="discountRate">0.62%</div>
+                    <div class="kpi-label">อัตราส่วนลด</div>
+                </div>
+                <div class="kpi-card" onclick="showKpiModal(17)">
+                    <div class="kpi-value" id="promoRate">5.13%</div>
+                    <div class="kpi-label">อัตราโปรโมชัน</div>
+                </div>
+                <div class="kpi-card" onclick="showKpiModal(19)">
+                    <div class="kpi-value" id="acquisitionRate">40.5%</div>
+                    <div class="kpi-label">Acquisition Rate</div>
+                </div>
+                <div class="kpi-card" onclick="showKpiModal(20)">
+                    <div class="kpi-value" id="retentionRate">59.5%</div>
+                    <div class="kpi-label">Retention Rate</div>
+                </div>
+                <div class="kpi-card" onclick="showKpiModal(12)">
+                    <div class="kpi-value" id="addonRate">0%</div>
+                    <div class="kpi-label">Add-on Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- สินค้า -->
+        <div class="card col-4">
+            <div class="card-title">
+                <div class="card-icon bg-teal">📦</div>
+                📦 ยอดขายตามหมวดหมู่
+            </div>
+            <div class="chart-box"><canvas id="categoryChart"></canvas></div>
+        </div>
+        
+        <div class="card col-4">
+            <div class="card-title">
+                <div class="card-icon bg-purple">🏆</div>
+                🏆 Top 5 สินค้าขายดี
+            </div>
+            <ul class="rank-list" id="topProducts"></ul>
+        </div>
+        
+        <div class="card col-4">
+            <div class="card-title">
+                <div class="card-icon bg-pink">🧊</div>
+                🧊 ร้อน vs เย็น & ขนาด
+            </div>
+            <div style="display:flex;gap:10px;">
+                <div style="flex:1;">
+                    <div style="text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:8px;">ร้อน/เย็น</div>
+                    <div class="chart-box-sm"><canvas id="hotIcedChart"></canvas></div>
+                </div>
+                <div style="flex:1;">
+                    <div style="text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:8px;">ขนาด</div>
+                    <div class="chart-box-sm"><canvas id="sizeChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ลูกค้า -->
+        <div class="card col-4">
+            <div class="card-title">
+                <div class="card-icon bg-green">👥</div>
+                👥 ลูกค้าใหม่ vs ประจำ
+            </div>
+            <div class="donut-flex">
+                <div class="donut-chart">
+                    <canvas id="customerChart"></canvas>
+                    <div class="donut-center">
+                        <div class="donut-total" id="totalCustomers">1,500</div>
+                        <div class="donut-label">ลูกค้า</div>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <div class="rank-item" onclick="applyFilter('customerType','New')">
+                        <div class="rank-num" style="background:linear-gradient(135deg,#10b981,#34d399);">N</div>
+                        <div class="rank-name">ลูกค้าใหม่</div>
+                        <div class="rank-value" id="newCust">608</div>
+                    </div>
+                    <div class="rank-item" onclick="applyFilter('customerType','Returning')">
+                        <div class="rank-num" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);">R</div>
+                        <div class="rank-name">ลูกค้าประจำ</div>
+                        <div class="rank-value" id="retCust">892</div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-val" style="color:#10b981;" id="newRevenue">84,565</div>
+                            <div class="stat-lbl">รายได้ ลูกใหม่</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-val" style="color:#8b5cf6;" id="retRevenue">125,385</div>
+                            <div class="stat-lbl">รายได้ ลูกประจำ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ช่องทาง -->
+        <div class="card col-4">
+            <div class="card-title">
+                <div class="card-icon bg-orange">🏪</div>
+                🏪 ช่องทางการขาย
+            </div>
+            <div class="chart-box"><canvas id="channelChart"></canvas></div>
+            <div class="progress-list">
+                <div class="progress-item" onclick="applyFilter('channel','Walk-in')">
+                    <div class="progress-header"><span>🚶 Walk-in</span><span id="ch1">152,755 ฿</span></div>
+                    <div class="progress-bar"><div class="progress-fill bg-pink" style="width:73%"></div></div>
+                </div>
+                <div class="progress-item" onclick="applyFilter('channel','Grab/Delivery')">
+                    <div class="progress-header"><span>🛵 Grab</span><span id="ch2">33,485 ฿</span></div>
+                    <div class="progress-bar"><div class="progress-fill bg-orange" style="width:16%"></div></div>
+                </div>
+                <div class="progress-item" onclick="applyFilter('channel','Line Man/Delivery')">
+                    <div class="progress-header"><span>🚚 Line Man</span><span id="ch3">23,710 ฿</span></div>
+                    <div class="progress-bar"><div class="progress-fill bg-yellow" style="width:11%"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- การชำระเงิน -->
+        <div class="card col-4">
+            <div class="card-title">
+                <div class="card-icon bg-teal">💳</div>
+                💳 วิธีการชำระเงิน
+            </div>
+            <div class="chart-box"><canvas id="paymentChart"></canvas></div>
+        </div>
+
+        <!-- เวลา -->
+        <div class="card col-6">
+            <div class="card-title">
+                <div class="card-icon bg-yellow">📅</div>
+                📅 ยอดขายรายวัน
+            </div>
+            <div class="chart-box"><canvas id="dayChart"></canvas></div>
+        </div>
+        
+        <div class="card col-6">
+            <div class="card-title">
+                <div class="card-icon bg-purple">🕐</div>
+                🕐 ยอดขายรายชั่วโมง
+            </div>
+            <div class="chart-box"><canvas id="hourlyChart"></canvas></div>
+        </div>
+
+        <!-- Time Slot -->
+        <div class="card col-6">
+            <div class="card-title">
+                <div class="card-icon bg-pink">⏰</div>
+                ⏰ ช่วงเวลา
+            </div>
+            <div class="progress-list">
+                <div class="progress-item" onclick="applyFilter('timeSlot','Morning Peak')">
+                    <div class="progress-header"><span>🌅 Morning Peak (8-11)</span><span id="ts1">95,580 ฿</span></div>
+                    <div class="progress-bar"><div class="progress-fill bg-pink" style="width:100%"></div></div>
+                </div>
+                <div class="progress-item" onclick="applyFilter('timeSlot','Midday')">
+                    <div class="progress-header"><span>☀️ Midday (11-13)</span><span id="ts2">53,645 ฿</span></div>
+                    <div class="progress-bar"><div class="progress-fill bg-teal" style="width:56%"></div></div>
+                </div>
+                <div class="progress-item" onclick="applyFilter('timeSlot','Afternoon Peak')">
+                    <div class="progress-header"><span>🌤️ Afternoon Peak (13-16)</span><span id="ts3">47,375 ฿</span></div>
+                    <div class="progress-bar"><div class="progress-fill bg-purple" style="width:50%"></div></div>
+                </div>
+                <div class="progress-item" onclick="applyFilter('timeSlot','Late')">
+                    <div class="progress-header"><span>🌙 Late (16+)</span><span id="ts4">13,350 ฿</span></div>
+                    <div class="progress-bar"><div class="progress-fill bg-green" style="width:14%"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Table -->
+        <div class="card col-6">
+            <div class="card-title">
+                <div class="card-icon bg-yellow">📋</div>
+                📋 KPI Definitions (คลิกเพื่อดูรายละเอียด)
+            </div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:50px;">#</th>
+                            <th style="width:90px;">มิติ</th>
+                            <th>ชื่อ KPI</th>
+                            <th>วิธีคำนวณ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kpiTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- KPI Modal -->
+<div class="modal-overlay" id="kpiModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title" id="modalTitle">KPI Details</div>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-section">
+            <div class="modal-label">📂 มิติ</div>
+            <div class="modal-value" id="modalDim">-</div>
+        </div>
+        <div class="modal-section">
+            <div class="modal-label">📌 ชื่อ KPI</div>
+            <div class="modal-value" id="modalName">-</div>
+        </div>
+        <div class="modal-section">
+            <div class="modal-label">📖 คำอธิบาย</div>
+            <div class="modal-value" id="modalDesc">-</div>
+        </div>
+        <div class="modal-section">
+            <div class="modal-label">💡 การแปลผล (สำหรับ CEO)</div>
+            <div class="modal-value" id="modalInterp">-</div>
+        </div>
+        <div class="modal-section">
+            <div class="modal-label">🔢 วิธีการคำนวณ</div>
+            <div class="modal-value" id="modalFormula">-</div>
+        </div>
+        <div class="modal-section">
+            <div class="modal-label">📊 ข้อมูลที่ใช้</div>
+            <div class="modal-value" id="modalData">-</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// KPI Definitions
+const kpiDefinitions = [
+    {id:1,dim:'ยอดขาย',name:'Total Revenue',desc:'รายได้รวมจากการขายสินค้าทั้งหมด',interp:'ยอดขายรวม 209,950 บาท',formula:'SUM(net_sales_thb)',data:'net_sales_thb'},
+    {id:2,dim:'ยอดขาย',name:'AOV',desc:'มูลค่าเฉลี่ยต่อออร์เดอร์',interp:'ลูกค้าเฉลี่ยซื้อ 139.97 บาท/ออร์เดอร์',formula:'SUM(net_sales)/COUNT(order_id)',data:'net_sales, order_id'},
+    {id:3,dim:'ยอดขาย',name:'Avg/Item',desc:'ราคาเฉลี่ยต่อชิ้น',interp:'สินค้าเฉลี่ย 82.59 บาท/ชิ้น',formula:'SUM(net_sales)/SUM(qty)',data:'net_sales, qty'},
+    {id:4,dim:'ยอดขาย',name:'Items Sold',desc:'จำนวนชิ้นที่ขาย',interp:'ขายได้ 2,542 ชิ้น',formula:'SUM(qty)',data:'qty'},
+    {id:5,dim:'ยอดขาย',name:'Discount',desc:'มูลค่าส่วนลดรวม',interp:'ให้ส่วนลด 1,300 บาท',formula:'SUM(discount_thb)',data:'discount_thb'},
+    {id:6,dim:'ยอดขาย',name:'Discount Rate',desc:'อัตราส่วนลด',interp:'ส่วนลด 0.62% ของยอดขาย',formula:'SUM(discount)/SUM(gross)*100',data:'discount, unit_price'},
+    {id:7,dim:'สินค้า',name:'Category Mix',desc:'สัดส่วนตามหมวด',interp:'Coffee 54%, Tea 26%...',formula:'GROUP BY category',data:'category'},
+    {id:8,dim:'สินค้า',name:'Top Product',desc:'สินค้าขายดีสุด',interp:'Thai Tea 22,155 บาท',formula:'GROUP BY menu_item',data:'menu_item'},
+    {id:9,dim:'สินค้า',name:'Product Profit',desc:'กำไรต่อหน่วย',interp:'ราคาเฉลี่ยต่อหมวด',formula:'AVG(unit_price)',data:'category, unit_price'},
+    {id:10,dim:'สินค้า',name:'Hot/Iced',desc:'สัดส่วนร้อนเย็น',interp:'เย็นมากกว่าร้อน',formula:'COUNT BY hot_iced',data:'hot_iced'},
+    {id:11,dim:'สินค้า',name:'Size',desc:'ความนิยมขนาด',interp:'ขนาด M ยอดนิยม',formula:'COUNT BY size',data:'size'},
+    {id:12,dim:'สินค้า',name:'Add-on',desc:'อัตราสินค้าเพิ่ม',interp:'Oat Milk, Whipped Cream',formula:'COUNT WHERE add_on',data:'add_on'},
+    {id:13,dim:'กิจกรรม',name:'Order Count',desc:'จำนวนออร์เดอร์',interp:'1,500 ออร์เดอร์',formula:'COUNT(order_id)',data:'order_id'},
+    {id:14,dim:'กิจกรรม',name:'Orders/Day',desc:'ออร์เดอร์ต่อวัน',interp:'88 ออร์เดอร์/วัน',formula:'COUNT/days',data:'order_date'},
+    {id:15,dim:'กิจกรรม',name:'Items/Order',desc:'ชิ้นต่อออร์เดอร์',interp:'1.69 ชิ้น/ออร์เดอร์',formula:'SUM(qty)/orders',data:'qty'},
+    {id:16,dim:'กิจกรรม',name:'Peak Hour',desc:'ช่วงพีค',interp:'Morning Peak สูงสุด',formula:'BY time_slot',data:'time_slot'},
+    {id:17,dim:'กิจกรรม',name:'Promo Rate',desc:'อัตราโปรโมชัน',interp:'5.13% ใช้โปร',formula:'SUM(promo)/orders*100',data:'promo_flag'},
+    {id:18,dim:'ลูกค้า',name:'Customer Mix',desc:'สัดส่วนลูกค้า',interp:'Returning 59.5%, New 40.5%',formula:'GROUP BY customer_type',data:'customer_type'},
+    {id:19,dim:'ลูกค้า',name:'Acquisition',desc:'อัตราลูกค้าใหม่',interp:'40.5% ลูกค้าใหม่',formula:'New/total*100',data:'customer_type'},
+    {id:20,dim:'ลูกค้า',name:'Retention',desc:'อัตราลูกค้าประจำ',interp:'59.5% ลูกค้าประจำ',formula:'Returning/total*100',data:'customer_type'},
+    {id:21,dim:'ลูกค้า',name:'Returning Rev',desc:'รายได้ลูกประจำ',interp:'125,385 บาท',formula:'SUM BY customer_type',data:'customer_type, net_sales'},
+    {id:22,dim:'ลูกค้า',name:'New Rev',desc:'รายได้ลูกใหม่',interp:'84,565 บาท',formula:'SUM BY customer_type',data:'customer_type, net_sales'},
+    {id:23,dim:'ช่องทาง',name:'Channel Mix',desc:'สัดส่วนช่องทาง',interp:'Walk-in 73%, Grab 16%',formula:'GROUP BY channel',data:'channel'},
+    {id:24,dim:'ช่องทาง',name:'Walk-in Rev',desc:'รายได้ Walk-in',interp:'152,755 บาท',formula:'SUM WHERE channel',data:'channel'},
+    {id:25,dim:'ช่องทาง',name:'Delivery Rev',desc:'รายได้ Delivery',interp:'57,195 บาท',formula:'SUM Delivery',data:'channel'},
+    {id:26,dim:'ช่องทาง',name:'Payment',desc:'วิธีชำระเงิน',interp:'QR 66%, Cash 20%',formula:'COUNT BY payment',data:'payment_method'},
+    {id:27,dim:'เวลา',name:'Daily Trend',desc:'ยอดขายรายวัน',interp:'เสาร์สูงสุด',formula:'BY day_of_week',data:'day_of_week'},
+    {id:28,dim:'เวลา',name:'Time Slot',desc:'ช่วงเวลา',interp:'Morning Peak ดีสุด',formula:'BY time_slot',data:'time_slot'},
+    {id:29,dim:'เวลา',name:'Hourly',desc:'รายชั่วโมง',interp:'10:00 สูงสุด',formula:'BY hour',data:'hour'},
+    {id:30,dim:'เวลา',name:'Weekend',desc:'วันธรรมดา/หยุด',interp:'วันหยุดสูงกว่า',formula:'GROUP BY weekend',data:'day_of_week'}
+];
+
+// Filter Options
+const filterOptions = {
+    category: ['Coffee', 'Tea', 'Bakery', 'Non-Coffee', 'Soda'],
+    customerType: ['New', 'Returning'],
+    channel: ['Walk-in', 'Grab/Delivery', 'Line Man/Delivery'],
+    timeSlot: ['Morning Peak', 'Midday', 'Afternoon Peak', 'Late'],
+    dayOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    hour: [8, 9, 10, 11, 12, 13, 14, 15, 16],
+    hotIced: ['Hot', 'Iced'],
+    size: ['S', 'M', 'L'],
+    paymentMethod: ['QR/PromptPay', 'Cash', 'Card']
+};
+
+const filterLabels = {
+    category: '📦 หมวดสินค้า',
+    customerType: '👥 ประเภทลูกค้า',
+    channel: '🏪 ช่องทาง',
+    timeSlot: '⏰ ช่วงเวลา',
+    dayOfWeek: '📅 วัน',
+    hour: '🕐 ชั่วโมง',
+    hotIced: '🧊 ร้อน/เย็น',
+    size: '📏 ขนาด',
+    paymentMethod: '💳 การชำระเงิน'
+};
+
+const dayLabels = { Mon:'จันทร์', Tue:'อังคาร', Wed:'พุธ', Thu:'พฤหัส', Fri:'ศุกร์', Sat:'เสาร์', Sun:'อาทิตย์' };
+
+// State
+let activeFilters = {};
+let rawData = [];
+let charts = {};
+
+// Default Data
+let data = {
+    totalRevenue:209950,aov:139.97,avgItemPrice:82.59,totalItems:2542,totalDiscount:1300,discountRate:0.62,
+    orderCount:1500,ordersPerDay:88.24,itemsPerOrder:1.69,promoRate:5.13,
+    customerType:{Returning:892,New:608},newRate:40.53,returningRate:59.47,customerRev:{New:84565,Returning:125385},
+    channelRev:{'Walk-in':152755,'Grab/Delivery':33485,'Line Man/Delivery':23710},
+    paymentMethod:{'QR/PromptPay':987,'Cash':295,'Card':218},
+    categoryRevenue:{Coffee:113240,Tea:55070,Bakery:20225,NonCoffee:13210,Soda:8205},
+    timeSlotRev:{'Morning Peak':95580,'Midday':53645,'Afternoon Peak':47375,'Late':13350},
+    dayRev:{Sat:47585,Wed:32265,Thu:31765,Tue:31790,Sun:31280,Fri:35265},
+    hourRev:{8:31765,9:31315,10:32500,11:19660,12:16440,13:17545,14:23780,15:23595,16:13350},
+    hotIced:{Iced:778,Hot:531},sizePref:{M:842,S:278,L:199},addonRate:0,
+    topProducts:[{name:'Thai Tea',revenue:22155},{name:'Matcha Latte',revenue:19830},{name:'Iced Latte',revenue:16560},{name:'Americano',revenue:15885},{name:'Iced Americano',revenue:15285}]
+};
+
+// Init Filter UI
+function initFilters(){
+    const container = document.getElementById('filterGroups');
+    container.innerHTML = Object.entries(filterOptions).map(([key, vals]) => `
+        <div class="filter-group">
+            <div class="filter-group-label">${filterLabels[key]}</div>
+            <div class="filter-options">
+                ${vals.map(v => {
+                    const label = key === 'dayOfWeek' ? (dayLabels[v] || v) : (key === 'hour' ? v+':00' : v);
+                    return `<div class="filter-chip" data-filter="${key}" data-value="${v}" onclick="applyFilter('${key}','${v}')">${label}</div>`;
+                }).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Modal
+function showKpiModal(id){
+    const k = kpiDefinitions.find(x=>x.id===id);
+    if(!k)return;
+    document.getElementById('modalTitle').textContent = '📊 ' + k.name;
+    document.getElementById('modalDim').textContent = k.dim;
+    document.getElementById('modalName').textContent = k.name;
+    document.getElementById('modalDesc').textContent = k.desc;
+    document.getElementById('modalInterp').textContent = k.interp;
+    document.getElementById('modalFormula').textContent = k.formula;
+    document.getElementById('modalData').textContent = k.data;
+    document.getElementById('kpiModal').classList.add('active');
+}
+function closeModal(){document.getElementById('kpiModal').classList.remove('active');}
+
+// Filter Functions
+function applyFilter(type,val){
+    if(activeFilters[type] === val) delete activeFilters[type];
+    else activeFilters[type] = val;
+    updateFilterUI();
+    recalculate();
+}
+
+function removeFilter(t){ delete activeFilters[t]; updateFilterUI(); recalculate(); }
+function clearAllFilters(){ activeFilters = {}; updateFilterUI(); recalculate(); }
+
+function updateFilterUI(){
+    // Update chips
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        const f = chip.dataset.filter;
+        const v = chip.dataset.value;
+        chip.classList.toggle('active', activeFilters[f] === v);
+    });
+    
+    // Update active filters display
+    const container = document.getElementById('activeFilters');
+    const filters = Object.entries(activeFilters);
+    if(filters.length === 0){
+        container.innerHTML = '';
+    }else{
+        container.innerHTML = filters.map(([f,v]) => {
+            const label = f === 'dayOfWeek' ? (dayLabels[v] || v) : (f === 'hour' ? v+':00' : v);
+            return `<div class="active-filter">${f}: ${label}<button onclick="removeFilter('${f}')">&times;</button></div>`;
+        }).join('');
+    }
+}
+
+// Recalculate
+function recalculate(){
+    let f = rawData.length > 0 ? rawData : null;
+    
+    if(f && Object.keys(activeFilters).length > 0){
+        f = rawData.filter(r => {
+            for(let [type, val] of Object.entries(activeFilters)){
+                if(type === 'category' && r.category !== val) return false;
+                if(type === 'customerType' && r.customerType !== val) return false;
+                if(type === 'channel' && r.channel !== val) return false;
+                if(type === 'dayOfWeek' && r.dayOfWeek !== val) return false;
+                if(type === 'timeSlot' && r.timeSlot !== val) return false;
+                if(type === 'hour' && r.hour != val) return false;
+                if(type === 'hotIced' && r.hotIced !== val) return false;
+                if(type === 'size' && r.size !== val) return false;
+                if(type === 'paymentMethod' && r.paymentMethod !== val) return false;
+            }
+            return true;
+        });
+    }
+    
+    if(!f || f.length === 0){
+        // No data - show zeros
+        data = {
+            totalRevenue:0,aov:0,avgItemPrice:0,totalItems:0,totalDiscount:0,discountRate:0,
+            orderCount:0,ordersPerDay:0,itemsPerOrder:0,promoRate:0,
+            customerType:{Returning:0,New:0},newRate:0,returningRate:0,customerRev:{New:0,Returning:0},
+            channelRev:{},paymentMethod:{},categoryRevenue:{},
+            timeSlotRev:{},dayRev:{},hourRev:{},
+            hotIced:{},sizePref:{},addonRate:0,topProducts:[]
+        };
+    }else{
+        let totalRev=0,totalItems=0,totalDisc=0,totalGross=0,orderSet=new Set(),promo=0;
+        let catR={},chR={},ctC={'New':0,'Returning':0},tsR={},dayR={},hrR={},pm={},hi={},sp={},miR={};
+        
+        f.forEach(r => {
+            totalRev += r.netSales||0;
+            totalItems += r.qty||1;
+            totalDisc += r.discount||0;
+            totalGross += (r.unitPrice||0)*(r.qty||1);
+            if(r.promoFlag) promo++;
+            if(r.orderId) orderSet.add(r.orderId);
+            if(r.category) catR[r.category] = (catR[r.category]||0) + (r.netSales||0);
+            if(r.channel) chR[r.channel] = (chR[r.channel]||0) + (r.netSales||0);
+            if(r.customerType==='New'||r.customerType==='Returning') ctC[r.customerType]++;
+            if(r.timeSlot) tsR[r.timeSlot] = (tsR[r.timeSlot]||0) + (r.netSales||0);
+            if(r.dayOfWeek) dayR[r.dayOfWeek] = (dayR[r.dayOfWeek]||0) + (r.netSales||0);
+            if(r.hour) hrR[r.hour] = (hrR[r.hour]||0) + (r.netSales||0);
+            if(r.paymentMethod) pm[r.paymentMethod] = (pm[r.paymentMethod]||0) + 1;
+            if(r.hotIced) hi[r.hotIced] = (hi[r.hotIced]||0) + 1;
+            if(r.size) sp[r.size] = (sp[r.size]||0) + 1;
+            if(r.menuItem) miR[r.menuItem] = (miR[r.menuItem]||0) + (r.netSales||0);
+        });
+        
+        const oc = orderSet.size;
+        data = {
+            totalRevenue:totalRev,
+            aov: oc > 0 ? (totalRev/oc).toFixed(2) : 0,
+            avgItemPrice: totalItems > 0 ? (totalRev/totalItems).toFixed(2) : 0,
+            totalItems,totalDiscount:totalDisc,
+            discountRate: totalGross > 0 ? (totalDisc/totalGross*100).toFixed(2) : 0,
+            orderCount:oc,ordersPerDay:oc,
+            itemsPerOrder: oc > 0 ? (totalItems/oc).toFixed(2) : 0,
+            promoRate: oc > 0 ? (promo/oc*100).toFixed(2) : 0,
+            customerType:ctC,
+            newRate: oc > 0 ? (ctC.New/oc*100).toFixed(2) : 0,
+            returningRate: oc > 0 ? (ctC.Returning/oc*100).toFixed(2) : 0,
+            customerRev: {
+                New: f.filter(r=>r.customerType==='New').reduce((s,r)=>s+(r.netSales||0),0),
+                Returning: f.filter(r=>r.customerType==='Returning').reduce((s,r)=>s+(r.netSales||0),0)
+            },
+            channelRev:chR,paymentMethod:pm,categoryRevenue:catR,timeSlotRev:tsR,dayRev:dayR,hourRev:hrR,
+            hotIced:hi,sizePref:sp,addonRate:0,
+            topProducts: Object.entries(miR).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([n,r])=>({name:n,revenue:r}))
+        };
+    }
+    updateUI();
+}
+
+// Init Charts
+function initCharts(){
+    Chart.defaults.color = 'rgba(255,255,255,0.7)';
+    Chart.defaults.font.family = 'Kanit';
+    
+    charts.category = new Chart(document.getElementById('categoryChart'),{
+        type:'doughnut',
+        data:{labels:['Coffee','Tea','Bakery','Non-Coffee','Soda'],datasets:[{data:[113240,55070,20225,13210,8205],backgroundColor:['#ff6b6b','#4ecdc4','#8b5cf6','#10b981','#f59e0b'],borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},padding:10}}},onClick:(e,el)=>{if(el.length)applyFilter('category',['Coffee','Tea','Bakery','Non-Coffee','Soda'][el[0].index])}}
+    });
+    
+    charts.customer = new Chart(document.getElementById('customerChart'),{
+        type:'doughnut',
+        data:{labels:['Returning','New'],datasets:[{data:[892,608],backgroundColor:['#8b5cf6','#10b981'],borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}},onClick:(e,el)=>{if(el.length)applyFilter('customerType',el[0].index===0?'Returning':'New')}}
+    });
+    
+    charts.channel = new Chart(document.getElementById('channelChart'),{
+        type:'bar',
+        data:{labels:['Walk-in','Grab','Line Man'],datasets:[{data:[152755,33485,23710],backgroundColor:['#ff6b6b','#f59e0b','#4ecdc4'],borderRadius:10}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(255,255,255,0.05)'}}},onClick:(e,el)=>{if(el.length)applyFilter('channel',['Walk-in','Grab/Delivery','Line Man/Delivery'][el[0].index])}}
+    });
+    
+    charts.day = new Chart(document.getElementById('dayChart'),{
+        type:'line',
+        data:{labels:['จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์','อาทิตย์'],datasets:[{data:[0,31790,32265,31765,35265,47585,31280],borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#f59e0b',pointRadius:6,pointHoverRadius:10}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(255,255,255,0.05)'}}},onClick:(e,el)=>{if(el.length)applyFilter('dayOfWeek',['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][el[0].index])}}
+    });
+    
+    charts.hourly = new Chart(document.getElementById('hourlyChart'),{
+        type:'bar',
+        data:{labels:['8:00','9:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00'],datasets:[{data:[31765,31315,32500,19660,16440,17545,23780,23595,13350],backgroundColor:['#ff6b6b','#ff6b6b','#ff6b6b','#8b5cf6','#8b5cf6','#8b5cf6','#4ecdc4','#4ecdc4','#4ecdc4'],borderRadius:8}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(255,255,255,0.05)'}}},onClick:(e,el)=>{if(el.length)applyFilter('hour',[8,9,10,11,12,13,14,15,16][el[0].index])}}
+    });
+    
+    charts.payment = new Chart(document.getElementById('paymentChart'),{
+        type:'doughnut',
+        data:{labels:['QR','Cash','Card'],datasets:[{data:[987,295,218],backgroundColor:['#10b981','#8b5cf6','#ff6b6b'],borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:15}}},onClick:(e,el)=>{if(el.length)applyFilter('paymentMethod',['QR/PromptPay','Cash','Card'][el[0].index])}}
+    });
+    
+    charts.hotIced = new Chart(document.getElementById('hotIcedChart'),{
+        type:'doughnut',
+        data:{labels:['Iced','Hot'],datasets:[{data:[778,531],backgroundColor:['#4ecdc4','#ff6b6b'],borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},onClick:(e,el)=>{if(el.length)applyFilter('hotIced',['Iced','Hot'][el[0].index])}}
+    });
+    
+    charts.size = new Chart(document.getElementById('sizeChart'),{
+        type:'doughnut',
+        data:{labels:['M','S','L'],datasets:[{data:[842,278,199],backgroundColor:['#10b981','#f59e0b','#ff6b6b'],borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},onClick:(e,el)=>{if(el.length)applyFilter('size',['M','S','L'][el[0].index])}}
+    });
+}
+
+// Update UI
+function updateUI(){
+    // Header
+    document.getElementById('headerOrders').textContent = data.orderCount.toLocaleString();
+    document.getElementById('headerRevenue').textContent = data.totalRevenue.toLocaleString();
+    document.getElementById('headerAOV').textContent = data.aov;
+    
+    // KPIs
+    document.getElementById('totalRevenue').textContent = data.totalRevenue.toLocaleString();
+    document.getElementById('aov').textContent = data.aov;
+    document.getElementById('avgItemPrice').textContent = data.avgItemPrice;
+    document.getElementById('totalItems').textContent = data.totalItems.toLocaleString();
+    document.getElementById('totalDiscount').textContent = data.totalDiscount.toLocaleString();
+    document.getElementById('discountRate').textContent = data.discountRate + '%';
+    document.getElementById('orderCount').textContent = data.orderCount.toLocaleString();
+    document.getElementById('ordersPerDay').textContent = data.ordersPerDay;
+    document.getElementById('promoRate').textContent = data.promoRate + '%';
+    document.getElementById('acquisitionRate').textContent = data.newRate + '%';
+    document.getElementById('retentionRate').textContent = data.returningRate + '%';
+    document.getElementById('addonRate').textContent = data.addonRate + '%';
+    
+    // Customer
+    const totalCust = data.customerType.Returning + data.customerType.New;
+    document.getElementById('totalCustomers').textContent = totalCust.toLocaleString();
+    document.getElementById('newCust').textContent = data.customerType.New.toLocaleString();
+    document.getElementById('retCust').textContent = data.customerType.Returning.toLocaleString();
+    document.getElementById('newRevenue').textContent = (data.customerRev.New||0).toLocaleString();
+    document.getElementById('retRevenue').textContent = (data.customerRev.Returning||0).toLocaleString();
+    
+    // Channel
+    document.getElementById('ch1').textContent = (data.channelRev['Walk-in']||0).toLocaleString() + ' ฿';
+    document.getElementById('ch2').textContent = (data.channelRev['Grab/Delivery']||0).toLocaleString() + ' ฿';
+    document.getElementById('ch3').textContent = (data.channelRev['Line Man/Delivery']||0).toLocaleString() + ' ฿';
+    
+    // Time Slot
+    const ts = data.timeSlotRev;
+    const tsVals = [ts['Morning Peak']||0, ts['Midday']||0, ts['Afternoon Peak']||0, ts['Late']||0];
+    const maxT = Math.max(...tsVals) || 1;
+    document.getElementById('ts1').textContent = tsVals[0].toLocaleString() + ' ฿';
+    document.getElementById('ts2').textContent = tsVals[1].toLocaleString() + ' ฿';
+    document.getElementById('ts3').textContent = tsVals[2].toLocaleString() + ' ฿';
+    document.getElementById('ts4').textContent = tsVals[3].toLocaleString() + ' ฿';
+    document.querySelectorAll('.progress-item .progress-fill')[0].style.width = (tsVals[0]/maxT*100) + '%';
+    document.querySelectorAll('.progress-item .progress-fill')[1].style.width = (tsVals[1]/maxT*100) + '%';
+    document.querySelectorAll('.progress-item .progress-fill')[2].style.width = (tsVals[2]/maxT*100) + '%';
+    document.querySelectorAll('.progress-item .progress-fill')[3].style.width = (tsVals[3]/maxT*100) + '%';
+    
+    // Top Products
+    document.getElementById('topProducts').innerHTML = data.topProducts.map((p,i) => `
+        <li class="rank-item" onclick="applyFilter('product','${p.name}')">
+            <div class="rank-num">${i+1}</div>
+            <div class="rank-name">${p.name}</div>
+            <div class="rank-value">${p.revenue.toLocaleString()}</div>
+        </li>
+    `).join('');
+    
+    // Update Charts
+    charts.category.data.labels = Object.keys(data.categoryRevenue);
+    charts.category.data.datasets[0].data = Object.values(data.categoryRevenue);
+    charts.category.update();
+    
+    charts.customer.data.datasets[0].data = [data.customerType.Returning, data.customerType.New];
+    charts.customer.update();
+    
+    charts.channel.data.labels = Object.keys(data.channelRev);
+    charts.channel.data.datasets[0].data = Object.values(data.channelRev);
+    charts.channel.update();
+    
+    const dayOrd = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    charts.day.data.datasets[0].data = dayOrd.map(d => data.dayRev[d] || 0);
+    charts.day.update();
+    
+    charts.hourly.data.labels = Object.keys(data.hourRev).map(h => h+':00');
+    charts.hourly.data.datasets[0].data = Object.values(data.hourRev);
+    charts.hourly.update();
+    
+    charts.payment.data.labels = Object.keys(data.paymentMethod);
+    charts.payment.data.datasets[0].data = Object.values(data.paymentMethod);
+    charts.payment.update();
+    
+    charts.hotIced.data.labels = Object.keys(data.hotIced);
+    charts.hotIced.data.datasets[0].data = Object.values(data.hotIced);
+    charts.hotIced.update();
+    
+    charts.size.data.labels = Object.keys(data.sizePref);
+    charts.size.data.datasets[0].data = Object.values(data.sizePref);
+    charts.size.update();
+}
+
+// KPI Table
+function initKpiTable(){
+    const colors = { 'ยอดขาย':'#ff6b6b', 'สินค้า':'#4ecdc4', 'กิจกรรม':'#8b5cf6', 'ลูกค้า':'#10b981', 'ช่องทาง':'#f97316', 'เวลา':'#f59e0b' };
+    document.getElementById('kpiTableBody').innerHTML = kpiDefinitions.map(k => `
+        <tr>
+            <td>${k.id}</td>
+            <td><span style="color:${colors[k.dim]};font-weight:700;">${k.dim}</span></td>
+            <td style="color:#4ecdc4;cursor:pointer;font-weight:600;" onclick="showKpiModal(${k.id})">${k.name}</td>
+            <td style="font-family:monospace;font-size:12px;color:var(--text-muted);">${k.formula}</td>
+        </tr>
+    `).join('');
+}
+
+// File Import
+document.getElementById('fileInput').addEventListener('change',async function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const st = document.getElementById('importStatus');
+    
+    try{
+        const buf = await file.arrayBuffer();
+        let rows;
+        if(file.name.endsWith('.xlsx')){
+            const wb = XLSX.read(buf);
+            rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+        }else{
+            const txt = new TextDecoder().decode(buf);
+            rows = txt.split('\n').map(r => r.split(','));
+        }
+        
+        if(rows && rows.length > 1){
+            const h = rows[0].map(x => x ? x.toString().toLowerCase().trim() : '');
+            const gi = n => h.findIndex(x => n.some(y => x.includes(y)));
+            const idx = {
+                netSales:gi(['net_sales']),orderId:gi(['order_id']),qty:gi(['qty']),
+                category:gi(['category']),channel:gi(['channel']),customerType:gi(['customer_type']),
+                timeSlot:gi(['time_slot']),dayOfWeek:gi(['day_of_week']),hour:gi(['hour']),
+                promoFlag:gi(['promo_flag']),discount:gi(['discount']),unitPrice:gi(['unit_price']),
+                paymentMethod:gi(['payment_method']),hotIced:gi(['hot_iced']),size:gi(['size']),
+                menuItem:gi(['menu_item']),addOn:gi(['add_on'])
+            };
+            
+            rawData = [];
+            for(let i=1;i<rows.length;i++){
+                const r = rows[i];
+                if(!r || r.length < 3) continue;
+                const ns = parseFloat(r[idx.netSales]) || 0;
+                if(ns > 0) rawData.push({
+                    netSales:ns,orderId:r[idx.orderId],qty:parseFloat(r[idx.qty])||1,
+                    category:r[idx.category]||'-',channel:r[idx.channel]||'-',customerType:r[idx.customerType]||'-',
+                    timeSlot:r[idx.timeSlot]||'-',dayOfWeek:r[idx.dayOfWeek]||'-',hour:parseInt(r[idx.hour])||0,
+                    promoFlag:r[idx.promoFlag]==1||r[idx.promoFlag]=='1',
+                    discount:parseFloat(r[idx.discount])||0,unitPrice:parseFloat(r[idx.unitPrice])||0,
+                    paymentMethod:r[idx.paymentMethod]||'-',hotIced:r[idx.hotIced]||'-',size:r[idx.size]||'-',
+                    menuItem:r[idx.menuItem]||'-'
+                });
+            }
+            
+            clearAllFilters();
+            recalculate();
+            st.className = 'import-status success';
+            st.innerHTML = '✅ Import สำเร็จ! ' + rawData.length + ' รายการ';
+        }
+    }catch(err){
+        st.className = 'import-status error';
+        st.textContent = '❌ Error: ' + err.message;
+    }
+});
+
+document.getElementById('kpiModal').addEventListener('click',e => { if(e.target.id === 'kpiModal') closeModal(); });
+
+// Initialize
+initFilters();
+initKpiTable();
+initCharts();
+updateUI();
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+{
+  "total_revenue": 209950,
+  "aov": 139.97,
+  "avg_item_price": 82.59,
+  "total_items": 2542,
+  "total_discount": 1300,
+  "discount_rate": 0.62,
+  "category_revenue": {
+    "Bakery": 20225,
+    "Coffee": 113240,
+    "Non-Coffee": 13210,
+    "Soda": 8205,
+    "Tea": 55070
+  },
+  "top_product": "Thai Tea",
+  "top_product_revenue": 22155,
+  "hot_iced": {
+    "Iced": 778,
+    "Hot": 531,
+    "-": 191
+  },
+  "size_pref": {
+    "M": 842,
+    "S": 278,
+    "L": 199,
+    "-": 181
+  },
+  "addon_count": 1500,
+  "addon_rate": 100.0,
+  "order_count": 1500,
+  "orders_per_day": 88.24,
+  "items_per_order": 1.69,
+  "time_slot_rev": {
+    "Afternoon Peak": 47375,
+    "Late": 13350,
+    "Midday": 53645,
+    "Morning Peak": 95580
+  },
+  "promo_rate": 5.13,
+  "customer_type": {
+    "Returning": 892,
+    "New": 608
+  },
+  "new_rate": 40.53,
+  "returning_rate": 59.47,
+  "customer_rev": {
+    "New": 84565,
+    "Returning": 125385
+  },
+  "channel_rev": {
+    "Grab/Delivery": 33485,
+    "Line Man/Delivery": 23710,
+    "Walk-in": 152755
+  },
+  "payment_method": {
+    "QR/PromptPay": 987,
+    "Cash": 295,
+    "Card": 218
+  },
+  "day_rev": {
+    "Fri": 35265,
+    "Sat": 47585,
+    "Sun": 31280,
+    "Thu": 31765,
+    "Tue": 31790,
+    "Wed": 32265
+  },
+  "hour_rev": {
+    "8": 31765,
+    "9": 31315,
+    "10": 32500,
+    "11": 19660,
+    "12": 16440,
+    "13": 17545,
+    "14": 23780,
+    "15": 23595,
+    "16": 13350
+  }
+}
