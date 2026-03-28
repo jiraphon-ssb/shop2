@@ -606,7 +606,7 @@
             <div id="importStatus" class="import-status"></div>
         </div>
         <div class="gsheet-wrapper">
-            <input type="text" id="sheetId" placeholder="Google Sheet ID" class="sheet-input">
+            <input type="text" id="sheetId" placeholder="วาง URL Google Sheets ที่แชร์เป็น Anyone" class="sheet-input">
             <button onclick="loadFromSheet()" class="sheet-btn">🌐 โหลดจาก Google Sheets</button>
         </div>
     </div>
@@ -1333,15 +1333,24 @@ document.getElementById('fileInput').addEventListener('change',async function(e)
 
 // Google Sheets Import
 async function loadFromSheet(){
-    const sheetId = document.getElementById('sheetId').value.trim();
-    if(!sheetId){ alert('กรุณาใส่ Google Sheet ID'); return; }
+    let input = document.getElementById('sheetId').value.trim();
+    if(!input){ alert('กรุณาใส่ Google Sheet URL หรือ ID'); return; }
+    
+    let sheetId, url;
+    if(input.includes('docs.google.com')){
+        const match = input.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if(!match){ alert('ไม่พบ Sheet ID'); return; }
+        sheetId = match[1];
+    }else{
+        sheetId = input;
+    }
+    url = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?output=csv`;
     
     const st = document.getElementById('importStatus');
     st.className = 'import-status';
     st.textContent = '⏳ กำลังโหลดข้อมูล...';
     
     try{
-        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
         const resp = await fetch(url);
         if(!resp.ok) throw new Error('Cannot access sheet - ต้องแชร์เป็น "Anyone with link"');
         const txt = await resp.text();
