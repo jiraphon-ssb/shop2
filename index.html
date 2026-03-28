@@ -128,6 +128,48 @@
         }
         .file-input-wrapper input[type="file"] { display: none; }
         
+        .gsheet-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .sheet-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.08);
+            color: var(--text);
+            font-family: 'Kanit', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .sheet-input:focus {
+            border-color: var(--secondary);
+            background: rgba(78, 205, 196, 0.1);
+        }
+        .sheet-input::placeholder {
+            color: var(--text-muted);
+        }
+        .sheet-btn {
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--secondary) 0%, #3db8b0 100%);
+            color: #fff;
+            font-family: 'Kanit', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .sheet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.35);
+        }
+        
         /* Import Status */
         .import-status { 
             margin-top: 10px; 
@@ -562,6 +604,10 @@
             </label>
             <input type="file" id="fileInput" accept=".xlsx,.csv">
             <div id="importStatus" class="import-status"></div>
+        </div>
+        <div class="gsheet-wrapper">
+            <input type="text" id="sheetId" placeholder="Google Sheet ID" class="sheet-input">
+            <button onclick="loadFromSheet()" class="sheet-btn">🌐 โหลดจาก Google Sheets</button>
         </div>
     </div>
 
@@ -1284,6 +1330,61 @@ document.getElementById('fileInput').addEventListener('change',async function(e)
         st.textContent = '❌ Error: ' + err.message;
     }
 });
+
+// Google Sheets Import
+async function loadFromSheet(){
+    const sheetId = document.getElementById('sheetId').value.trim();
+    if(!sheetId){ alert('กรุณาใส่ Google Sheet ID'); return; }
+    
+    const st = document.getElementById('importStatus');
+    st.className = 'import-status';
+    st.textContent = '⏳ กำลังโหลดข้อมูล...';
+    
+    try{
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+        const resp = await fetch(url);
+        if(!resp.ok) throw new Error('Cannot access sheet - ต้องแชร์เป็น "Anyone with link"');
+        const txt = await resp.text();
+        const rows = txt.split('\n').map(r => r.split(','));
+        
+        if(rows && rows.length > 1){
+            const h = rows[0].map(x => x ? x.toString().toLowerCase().trim() : '');
+            const gi = n => h.findIndex(x => n.some(y => x.includes(y)));
+            const idx = {
+                netSales:gi(['net_sales']),orderId:gi(['order_id']),qty:gi(['qty']),
+                category:gi(['category']),channel:gi(['channel']),customerType:gi(['customer_type']),
+                timeSlot:gi(['time_slot']),dayOfWeek:gi(['day_of_week']),hour:gi(['hour']),
+                promoFlag:gi(['promo_flag']),discount:gi(['discount']),unitPrice:gi(['unit_price']),
+                paymentMethod:gi(['payment_method']),hotIced:gi(['hot_iced']),size:gi(['size']),
+                menuItem:gi(['menu_item']),addOn:gi(['add_on'])
+            };
+            
+            rawData = [];
+            for(let i=1;i<rows.length;i++){
+                const r = rows[i];
+                if(!r || r.length < 3) continue;
+                const ns = parseFloat(r[idx.netSales]) || 0;
+                if(ns > 0) rawData.push({
+                    netSales:ns,orderId:r[idx.orderId],qty:parseFloat(r[idx.qty])||1,
+                    category:r[idx.category]||'-',channel:r[idx.channel]||'-',customerType:r[idx.customerType]||'-',
+                    timeSlot:r[idx.timeSlot]||'-',dayOfWeek:r[idx.dayOfWeek]||'-',hour:parseInt(r[idx.hour])||0,
+                    promoFlag:r[idx.promoFlag]==1||r[idx.promoFlag]=='1',
+                    discount:parseFloat(r[idx.discount])||0,unitPrice:parseFloat(r[idx.unitPrice])||0,
+                    paymentMethod:r[idx.paymentMethod]||'-',hotIced:r[idx.hotIced]||'-',size:r[idx.size]||'-',
+                    menuItem:r[idx.menuItem]||'-'
+                });
+            }
+            
+            clearAllFilters();
+            recalculate();
+            st.className = 'import-status success';
+            st.innerHTML = '✅ โหลดจาก Google Sheets สำเร็จ! ' + rawData.length + ' รายการ';
+        }
+    }catch(err){
+        st.className = 'import-status error';
+        st.textContent = '❌ Error: ' + err.message;
+    }
+}
 
 document.getElementById('kpiModal').addEventListener('click',e => { if(e.target.id === 'kpiModal') closeModal(); });
 
